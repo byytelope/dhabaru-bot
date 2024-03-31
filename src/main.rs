@@ -31,14 +31,15 @@ async fn main() {
 
     let subscriber = tracing_subscriber::fmt()
         .compact()
+        .with_file(true)
         .with_line_number(true)
-        .with_target(false)
+        .without_time()
         .finish();
 
     tracing::subscriber::set_global_default(subscriber).unwrap();
 
     let options = FrameworkOptions {
-        commands: vec![commands::bruh()],
+        commands: vec![commands::ping(), commands::activity()],
         on_error: |error| Box::pin(on_error(error)),
         pre_command: |ctx| {
             Box::pin(async move {
@@ -67,6 +68,7 @@ async fn main() {
             Box::pin(async move {
                 info!("Logged in as {}", ready.user.name);
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
+
                 Ok(Data {})
             })
         })
@@ -74,7 +76,7 @@ async fn main() {
         .build();
 
     let token = std::env::var("DISCORD_TOKEN").expect("Token missing from .env");
-    let intents = GatewayIntents::non_privileged();
+    let intents = GatewayIntents::all();
     let client = ClientBuilder::new(token, intents)
         .framework(framework)
         .await;
