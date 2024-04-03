@@ -25,11 +25,11 @@ pub async fn activity(
             let status = presences.status.name();
             let activity = match presences.activities.first() {
                 Some(ac) => match ac.kind {
-                    ActivityType::Playing => format!("playing {}", ac.name),
-                    ActivityType::Streaming => format!("streaming {}", ac.name),
-                    ActivityType::Listening => format!("listening to {}", ac.name),
-                    ActivityType::Watching => format!("watching {}", ac.name),
-                    ActivityType::Competing => format!("competing in {}", ac.name),
+                    ActivityType::Playing => format!("playing `{}`", ac.name),
+                    ActivityType::Streaming => format!("streaming `{}`", ac.name),
+                    ActivityType::Listening => format!("listening to `{}`", ac.name),
+                    ActivityType::Watching => format!("watching `{}`", ac.name),
+                    ActivityType::Competing => format!("competing in `{}`", ac.name),
                     _ => "chillin".into(),
                 },
                 None => "chillin".into(),
