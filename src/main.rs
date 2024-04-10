@@ -8,10 +8,10 @@ use tracing::{error, info};
 
 pub struct Data {}
 
-type Error = Box<dyn std::error::Error + Send + Sync>;
-type Context<'a> = poise::Context<'a, Data, Error>;
+type PoiseError = Box<dyn std::error::Error + Send + Sync>;
+type Context<'a> = poise::Context<'a, Data, PoiseError>;
 
-async fn on_error(error: poise::FrameworkError<'_, Data, Error>) {
+async fn on_error(error: poise::FrameworkError<'_, Data, PoiseError>) {
     match error {
         FrameworkError::Setup { error, .. } => panic!("Failed to start bot: {:?}", error),
         FrameworkError::Command { error, ctx, .. } => {
@@ -39,7 +39,7 @@ async fn main() {
     tracing::subscriber::set_global_default(subscriber).unwrap();
 
     let options = FrameworkOptions {
-        commands: vec![commands::ping(), commands::activity()],
+        commands: vec![commands::ping(), commands::activity(), commands::clear()],
         on_error: |error| Box::pin(on_error(error)),
         pre_command: |ctx| {
             Box::pin(async move {

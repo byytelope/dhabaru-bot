@@ -1,14 +1,13 @@
-use poise::serenity_prelude::{ActivityType, Mention, User};
+use poise::serenity_prelude::{futures::StreamExt, ActivityType, Mention, User};
 
-use crate::{Context, Error};
+use crate::{Context, PoiseError};
 
 /// Get latency
 /// May be inconsistent
 #[poise::command(slash_command)]
-pub async fn ping(ctx: Context<'_>) -> Result<(), Error> {
+pub async fn ping(ctx: Context<'_>) -> Result<(), PoiseError> {
     ctx.say(format!("🏓 {:?}ms", ctx.ping().await.as_millis()))
-        .await
-        .unwrap();
+        .await?;
 
     Ok(())
 }
@@ -18,7 +17,7 @@ pub async fn ping(ctx: Context<'_>) -> Result<(), Error> {
 pub async fn activity(
     ctx: Context<'_>,
     #[description = "User to check status"] user: User,
-) -> Result<(), Error> {
+) -> Result<(), PoiseError> {
     let res = match ctx.guild().unwrap().presences.get(&user.id) {
         Some(presences) => {
             println!("{:#?}", presences);
@@ -40,7 +39,32 @@ pub async fn activity(
         None => "Please try again in a moment...".into(),
     };
 
-    ctx.reply(res).await.unwrap();
+    ctx.reply(res).await?;
+
+    Ok(())
+}
+
+/// Delete messages from channel
+#[poise::command(slash_command, required_permissions = "ADMINISTRATOR")]
+pub async fn clear(
+    ctx: Context<'_>,
+    #[description = "Minimum of 2, maximum of 100"]
+    #[min = 2]
+    #[max = 100]
+    amount: u32,
+) -> Result<(), PoiseError> {
+    let mut messages = ctx.channel_id().messages_iter(&ctx).boxed();
+
+    for _ in 0..amount {
+        if let Some(message_res) = messages.next().await {
+            match message_res {
+                Ok(message_res) => message_res.delete(&ctx.http()).await?,
+                Err(e) => eprintln!("{}", e),
+            }
+        }
+    }
+
+    ctx.reply(format!("Deleted `{}` messages", amount)).await?;
 
     Ok(())
 }
