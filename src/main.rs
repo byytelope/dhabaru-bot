@@ -39,7 +39,12 @@ async fn main() {
     tracing::subscriber::set_global_default(subscriber).unwrap();
 
     let options = FrameworkOptions {
-        commands: vec![commands::ping(), commands::activity(), commands::clear()],
+        commands: vec![
+            commands::misc::ping(),
+            commands::misc::activity(),
+            commands::misc::clear(),
+            commands::vlr::vlr_rank(),
+        ],
         on_error: |error| Box::pin(on_error(error)),
         pre_command: |ctx| {
             Box::pin(async move {
