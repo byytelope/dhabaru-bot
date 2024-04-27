@@ -20,7 +20,6 @@ pub async fn activity(
 ) -> Result<(), PoiseError> {
     let res = match ctx.guild().unwrap().presences.get(&user.id) {
         Some(presences) => {
-            println!("{:#?}", presences);
             let status = presences.status.name();
             let activity = match presences.activities.first() {
                 Some(ac) => match ac.kind {
@@ -59,7 +58,7 @@ pub async fn clear(
         if let Some(message_res) = messages.next().await {
             match message_res {
                 Ok(message_res) => message_res.delete(&ctx.http()).await?,
-                Err(e) => eprintln!("{}", e),
+                Err(e) => tracing::error!("Error occurred while using clear: {}", e),
             }
         }
     }

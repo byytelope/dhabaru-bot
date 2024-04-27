@@ -1,3 +1,7 @@
+use poise::{
+    serenity_prelude::{CreateEmbed, CreateEmbedAuthor, CreateEmbedFooter},
+    CreateReply,
+};
 use serde::Deserialize;
 
 use crate::{Context, PoiseError};
@@ -48,15 +52,10 @@ pub struct ValoApiError {
 
 #[derive(Debug, Deserialize)]
 pub struct ValoApiData {
-    pub puuid: String,
-    pub current_data: ValoApiCurrData,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct ValoApiCurrData {
     pub currenttier: u32,
     pub currenttierpatched: String,
     pub images: ValoApiImages,
+    pub ranking_in_tier: u32,
     pub elo: u32,
     pub old: bool,
 }
@@ -76,7 +75,7 @@ pub async fn vlr_rank(
     #[description = "The part of your username after the '#'"] tag: String,
 ) -> Result<(), PoiseError> {
     let res = reqwest::get(format!(
-        "https://api.henrikdev.xyz/valorant/v2/mmr/{}/{}/{}",
+        "https://api.henrikdev.xyz/valorant/v1/mmr/{}/{}/{}",
         String::from(server),
         name,
         tag
@@ -87,8 +86,39 @@ pub async fn vlr_rank(
     .await
     .unwrap();
 
-    println!("{:#?}", res);
+    if let Some(data) = res.data {
+        let embed = CreateEmbed::new()
+            .author(CreateEmbedAuthor::new(format!("{}#{}", name, tag)))
+            .footer(
+                CreateEmbedFooter::new(format!("requested by: {}", ctx.author().name)).icon_url(
+                    ctx.author()
+                        .avatar_url()
+                        .unwrap_or(ctx.author().default_avatar_url()),
+                ),
+            )
+            .thumbnail(data.images.large)
+            .field("Rank", data.currenttierpatched, true)
+            .field("Progress", data.ranking_in_tier.to_string(), true);
 
-    ctx.say("Bruvc").await?;
+        ctx.send(CreateReply::default().embed(embed)).await?;
+    }
+
+    if let Some(errors) = res.errors {
+        for error in &errors {
+            tracing::error!(
+                r#"Error occurred while fetching from Valorant API: "{}""#,
+                error.message
+            );
+        }
+
+        let msg = match res.status {
+            404 => "Player not found...",
+            _ => "Please try again in a few minutes...",
+        };
+
+        ctx.send(CreateReply::default().content(msg).ephemeral(true))
+            .await?;
+    }
+
     Ok(())
 }
